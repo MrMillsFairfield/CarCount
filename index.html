@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count the Colorful Cars!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #e0f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Road Styles */
+        .road-container {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            background-color: #555;
+            border-top: 15px solid #7cb342;
+            border-bottom: 15px solid #7cb342;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .road-lines {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 8px;
+            transform: translateY(-50%);
+            background-image: linear-gradient(to right, transparent 50%, #FFEB3B 50%);
+            background-size: 80px 100%;
+            opacity: 0.8;
+        }
+
+        /* Pure CSS Car */
+        .car {
+            position: absolute;
+            left: -160px; /* Start offscreen to the left */
+            width: 140px;
+            height: 60px;
+            animation: driveRight linear forwards;
+            z-index: 10;
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
+        }
+
+        @keyframes driveRight {
+            0% { left: -160px; }
+            100% { left: 100%; }
+        }
+
+        /* Lanes for depth */
+        .lane-1 { bottom: 20px; z-index: 15; }
+        .lane-2 { bottom: 105px; z-index: 10; transform: scale(0.85); }
+
+        .car-roof {
+            position: absolute;
+            bottom: 35px;
+            left: 25px;
+            width: 80px;
+            height: 35px;
+            border-radius: 40px 30px 0 0;
+        }
+
+        .car-body-shape {
+            position: absolute;
+            bottom: 12px;
+            left: 0;
+            width: 140px;
+            height: 35px;
+            border-radius: 15px 30px 15px 15px;
+        }
+
+        .window {
+            position: absolute;
+            bottom: 38px;
+            left: 45px;
+            width: 45px;
+            height: 22px;
+            background-color: #e0f7fa;
+            border-radius: 15px 15px 0 0;
+            border: 3px solid rgba(255,255,255,0.4);
+        }
+
+        .wheel {
+            position: absolute;
+            bottom: 0px;
+            width: 32px;
+            height: 32px;
+            background-color: #222;
+            border-radius: 50%;
+            border: 4px solid #ddd;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        .wheel.back { left: 15px; }
+        .wheel.front { right: 20px; }
+
+        .headlight {
+            position: absolute;
+            bottom: 22px;
+            right: 2px;
+            width: 8px;
+            height: 12px;
+            background-color: #FFEB3B;
+            border-radius: 4px;
+        }
+
+        /* Colors */
+        .pink-car .car-body-shape, .pink-car .car-roof { background-color: #FF69B4; }
+        .purple-car .car-body-shape, .purple-car .car-roof { background-color: #9c27b0; }
+        .red-car .car-body-shape, .red-car .car-roof { background-color: #f44336; }
+        .blue-car .car-body-shape, .blue-car .car-roof { background-color: #2196f3; }
+
+        /* Input Table Styling */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8">
+
+    <div class="max-w-4xl w-full px-4 text-center">
+        <!-- Header -->
+        <h1 class="text-4xl md:text-5xl font-black text-blue-800 mb-2 drop-shadow-md">Count the Colourful Cars! 🚗</h1>
+        <p class="text-lg text-gray-700 font-bold mb-6">Watch the road and count how many cars of each color drive by.</p>
+
+        <!-- Game Controls -->
+        <div class="mb-6">
+            <button id="start-btn" onclick="startGame()" class="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 border-b-4 border-green-700">
+                Start Game
+            </button>
+        </div>
+
+        <!-- The Road -->
+        <div id="road" class="road-container rounded-3xl mx-auto mb-8 shadow-2xl">
+            <div class="road-lines"></div>
+            <!-- Cars will be injected here via JavaScript -->
+        </div>
+
+        <!-- Input Table -->
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl max-w-3xl mx-auto border-4 border-blue-100">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Enter your counts here:</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                
+                <!-- Pink Input -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xl font-bold text-pink-500 mb-2">Pink Cars</label>
+                    <input type="number" id="count-pink" min="0" disabled
+                           class="w-24 h-16 text-center text-3xl font-black text-gray-700 bg-gray-100 border-4 border-pink-300 rounded-2xl focus:outline-none focus:border-pink-500 transition-colors disabled:opacity-50">
+                </div>
+
+                <!-- Purple Input -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xl font-bold text-purple-600 mb-2">Purple Cars</label>
+                    <input type="number" id="count-purple" min="0" disabled
+                           class="w-24 h-16 text-center text-3xl font-black text-gray-700 bg-gray-100 border-4 border-purple-300 rounded-2xl focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50">
+                </div>
+
+                <!-- Red Input -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xl font-bold text-red-500 mb-2">Red Cars</label>
+                    <input type="number" id="count-red" min="0" disabled
+                           class="w-24 h-16 text-center text-3xl font-black text-gray-700 bg-gray-100 border-4 border-red-300 rounded-2xl focus:outline-none focus:border-red-500 transition-colors disabled:opacity-50">
+                </div>
+
+                <!-- Blue Input -->
+                <div class="flex flex-col items-center">
+                    <label class="text-xl font-bold text-blue-500 mb-2">Blue Cars</label>
+                    <input type="number" id="count-blue" min="0" disabled
+                           class="w-24 h-16 text-center text-3xl font-black text-gray-700 bg-gray-100 border-4 border-blue-300 rounded-2xl focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50">
+                </div>
+
+            </div>
+
+            <!-- Check Answers & Feedback -->
+            <div class="mt-8 flex flex-col items-center">
+                <button id="check-btn" onclick="checkAnswers()" disabled
+                        class="bg-blue-500 hover:bg-blue-600 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 border-b-4 border-blue-700 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed">
+                    Check Answers
+                </button>
+                <div id="msg" class="h-10 mt-6 text-2xl font-black"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['pink', 'purple', 'red', 'blue'];
+        let actualCounts = { pink: 0, purple: 0, red: 0, blue: 0 };
+        let gameActive = false;
+
+        function startGame() {
+            if (gameActive) return;
+            gameActive = true;
+            
+            // 1. Reset Game State
+            actualCounts = { pink: 0, purple: 0, red: 0, blue: 0 };
+            document.getElementById('road').innerHTML = '<div class="road-lines"></div>';
+            
+            const msgEl = document.getElementById('msg');
+            msgEl.innerText = "👀 Watch the road carefully! 👀";
+            msgEl.className = 'h-10 mt-6 text-2xl font-black text-orange-500 animate-pulse';
+
+            // Disable controls during game
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('check-btn').disabled = true;
+            
+            // Clear and disable inputs
+            colors.forEach(c => {
+                const inputEl = document.getElementById(`count-${c}`);
+                inputEl.value = '';
+                inputEl.disabled = true;
+                // Reset input borders
+                inputEl.className = `w-24 h-16 text-center text-3xl font-black text-gray-700 bg-gray-100 border-4 border-${c === 'purple' ? 'purple' : c}-300 rounded-2xl focus:outline-none focus:border-${c === 'purple' ? 'purple' : c}-500 transition-colors disabled:opacity-50`;
+            });
+            
+            // 2. Schedule Cars
+            // Generate a total of 10 to 18 cars to keep the game engaging but countable
+            let totalCars = Math.floor(Math.random() * 9) + 6; 
+            let schedule = [];
+            let currentTime = 1000; // Start first car after 1s
+            
+            for(let i = 0; i < totalCars; i++) {
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                actualCounts[color]++;
+                
+                // Randomize lane (1 or 2)
+                let lane = Math.random() > 0.5 ? 1 : 2;
+                
+                // Randomize speed: 7s to 11s duration (Slow enough to count)
+                let duration = 9000 + (Math.random() * 4000); 
+                
+                schedule.push({ color, time: currentTime, lane, duration });
+                
+                // Time gap between spawns: 1.2s to 2.8s
+                currentTime += (Math.random() * 1600) + 1700; 
+            }
+            
+            // 3. Spawn Cars based on schedule
+            schedule.forEach(car => {
+                setTimeout(() => spawnCar(car.color, car.lane, car.duration), car.time);
+            });
+            
+            // 4. End Game after the last car finishes its animation
+            let gameDuration = currentTime + 11000; // time of last spawn + max animation duration
+            setTimeout(endGame, gameDuration);
+        }
+        
+        function spawnCar(color, lane, duration) {
+            const road = document.getElementById('road');
+            const carDiv = document.createElement('div');
+            
+            // Assign base classes, lane, and color
+            carDiv.className = `car lane-${lane} ${color}-car`;
+            carDiv.style.animationDuration = `${duration}ms`;
+            
+            // Pure CSS car structure
+            carDiv.innerHTML = `
+                <div class="car-roof"></div>
+                <div class="window"></div>
+                <div class="car-body-shape"></div>
+                <div class="headlight"></div>
+                <div class="wheel back"></div>
+                <div class="wheel front"></div>
+            `;
+            
+            road.appendChild(carDiv);
+            
+            // Remove DOM element after animation ends to keep it clean
+            setTimeout(() => {
+                if (road.contains(carDiv)) {
+                    road.removeChild(carDiv);
+                }
+            }, duration + 100);
+        }
+        
+        function endGame() {
+            gameActive = false;
+            
+            // Re-enable controls and inputs
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('start-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('start-btn').innerText = "Play Again";
+            
+            document.getElementById('check-btn').disabled = false;
+            
+            colors.forEach(c => {
+                document.getElementById(`count-${c}`).disabled = false;
+            });
+
+            // Update user prompt
+            const msgEl = document.getElementById('msg');
+            msgEl.innerText = "All cars have passed! Enter your counts.";
+            msgEl.className = 'h-10 mt-6 text-2xl font-black text-blue-600';
+        }
+        
+        function checkAnswers() {
+            if (gameActive) return;
+            
+            let allCorrect = true;
+            let emptyFields = false;
+            
+            colors.forEach(color => {
+                let inputEl = document.getElementById(`count-${color}`);
+                let val = inputEl.value;
+                
+                if (val === '') {
+                    emptyFields = true;
+                    return;
+                }
+                
+                let numVal = parseInt(val);
+                
+                // Keep base tailwind classes but alter borders/backgrounds for feedback
+                inputEl.className = `w-24 h-16 text-center text-3xl font-black text-gray-800 rounded-2xl focus:outline-none transition-colors`;
+                
+                if (numVal === actualCounts[color]) {
+                    inputEl.classList.add('border-4', 'border-green-500', 'bg-green-100');
+                } else {
+                    inputEl.classList.add('border-4', 'border-red-500', 'bg-red-100');
+                    allCorrect = false;
+                }
+            });
+            
+            const msgEl = document.getElementById('msg');
+            
+            if (emptyFields) {
+                msgEl.innerText = "Please fill in all the boxes first!";
+                msgEl.className = 'h-10 mt-6 text-2xl font-black text-orange-500';
+                return;
+            }
+            
+            if (allCorrect) {
+                msgEl.innerText = "🎉 Yay! You counted them all correctly! 🎉";
+                msgEl.className = 'h-10 mt-6 text-2xl font-black text-green-600 animate-bounce';
+            } else {
+                msgEl.innerText = "Oops! Some counts are incorrect. Try again!";
+                msgEl.className = 'h-10 mt-6 text-2xl font-black text-red-600';
+            }
+        }
+    </script>
+</body>
+</html>
